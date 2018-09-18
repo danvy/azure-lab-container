@@ -1,0 +1,12 @@
+docker images
+
+docker build -t lab_front front/.
+
+docker run -d -p 5580:80 -e ASPNETCORE_ENVIRONMENT=Development lab_front
+
+docker rmi lab_front
+
+cd src
+(Voir .env)
+docker-compose build
+docker-compose up

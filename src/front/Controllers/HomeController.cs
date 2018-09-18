@@ -18,8 +18,16 @@ namespace front.Controllers
 
         public async Task<IActionResult> About()
         {
+            var time = string.Empty;
             var client = new HttpClient();
-            var time = await client.GetStringAsync("http://back/api/time");
+            try
+            {
+                time = await client.GetStringAsync("http://back:81/api/time");
+            }
+            catch
+            {
+                time = "Unknown";
+            }
             ViewData["Message"] = "Server time: " + time;
             return View();
         }
