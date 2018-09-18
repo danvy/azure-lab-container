@@ -1,0 +1,99 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "containerGroupName": {
+            "type": "string",
+            "defaultValue": "myContainerGroup",
+            "metadata": {
+                "description": "Container Group name."
+            }
+        },
+        "registryPassword": {
+            "type": "string",
+            "defaultValue": "",
+            "metadata": {
+                "description": "Container Registry password."
+            }
+        }
+    },
+    "variables": {
+        "containerBackName": "labback",
+        "containerBackImage": "azurelab18.azurecr.io/lab_back",
+        "containerFrontName": "labfront",
+        "containerFrontImage": "azurelab18.azurecr.io/lab_front",
+        "registryLoginServer": "azurelab18.azurecr.io",
+        "registryUsername": "azurelab18"
+    },
+    "resources": [
+        {
+            "name": "[parameters('containerGroupName')]",
+            "type": "Microsoft.ContainerInstance/containerGroups",
+            "apiVersion": "2018-04-01",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "containers": [
+                    {
+                        "name": "[variables('containerBackName')]",
+                        "properties": {
+                            "image": "[variables('containerBackImage')]",
+                            "resources": {
+                                "requests": {
+                                    "cpu": 1,
+                                    "memoryInGB": 1.5
+                                }
+                            },
+                            "ports": [
+                                {
+                                    "protocol": "TCP",
+                                    "port": 81
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "name": "[variables('containerFrontName')]",
+                        "properties": {
+                            "image": "[variables('containerFrontImage')]",
+                            "resources": {
+                                "requests": {
+                                    "cpu": 1,
+                                    "memoryInGB": 1.5
+                                }
+                            },
+                            "ports": [
+                                {
+                                    "protocol": "TCP",
+                                    "port": 80
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "imageRegistryCredentials": [
+                    {
+                        "server": "[variables('registryLoginServer')]",
+                        "username": "[variables('registryUsername')]",
+                        "password": "[parameters('registryPassword')]"
+                    }
+                ],
+                "osType": "Linux",
+                "ipAddress": {
+                    "type": "Public",
+                    "ports": [
+                        {
+                            "protocol": "TCP",
+                            "port": 80
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "outputs": {
+        "containerIPv4Address": {
+            "type": "string",
+            "value": "[reference(resourceId('Microsoft.ContainerInstance/containerGroups/', parameters('containerGroupName'))).ipAddress.ip]"
+        }
+    }
+}

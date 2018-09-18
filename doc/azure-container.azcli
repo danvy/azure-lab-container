@@ -1,0 +1,58 @@
+# Resource Group name
+set RG_NAME=azurelab 
+# Azure Container Registry name
+set ACR_NAME=azurelab18       
+# Azure Container Instance name
+set ACI_NAME=azurelabapp
+
+az login
+#resource group creation
+az group create --name %RG_NAME% --location westeurope
+#Azure Container Registry creation
+az acr create --resource-group %RG_NAME% --name %ACR_NAME% --sku Basic
+az acr list --resource-group %RG_NAME% --query "[].{acrLoginServer:loginServer}" --output table
+
+#Login to the Azure Container Registry
+az acr login --name %ACR_NAME%
+
+#Build the images
+cd src
+docker-compose build
+
+#Tag the images with the ACR name
+docker tag lab_back %ACR_NAME%.azurecr.io/lab_back
+docker tag lab_front %ACR_NAME%.azurecr.io/lab_front
+
+
+#Push the images to the ACR
+docker push %ACR_NAME%.azurecr.io/lab_back
+docker push %ACR_NAME%.azurecr.io/lab_front
+
+#Check the images in ACR
+az acr repository list --name %ACR_NAME% --output table
+
+#Allow administrative operations
+az acr update --name %ACR_NAME% --admin-enabled true
+
+#Retrieve admin password
+az acr credential show --name %ACR_NAME% --query "passwords[0].value"
+
+set ACR_PASSWORD=""
+
+#Create an Azure Container Instance
+az container create --resource-group %RG_NAME% --name %ACI_NAME% --image "%ACR_NAME%.azurecr.io/lab_front" --cpu 1 --memory 1 --registry-username %ACR_NAME% --registry-password %ACR_PASSWORD% --dns-name-label %ACI_NAME% --ports 80
+
+#Check its status during creation
+az container show --resource-group %RG_NAME% --name %ACI_NAME% --query instanceView.state
+
+#Get the IP Address so we can connect
+az container show --resource-group %RG_NAME% --name %ACI_NAME% --query ipAddress
+
+
+az group deployment create --resource-group %RG_NAME% --template-file azuredeploy.json --parameters containerGroupName=azurelabapp2 --parameters registryPassword=%ACR_PASSWORD%
+
+#docker pull $ACR_NAME.azurecr.io/lab_back
+#docker pull $ACR_NAME.azurecr.io/lab_front
+
+az acr repository delete --name %ACR_NAME% --repository lab_back --tag latest --manifest
+az acr repository delete --name %ACR_NAME% --repository lab_front --tag latest --manifest
