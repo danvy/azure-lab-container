@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "azure-lab-container.fullname" . }}
+  labels:
+    app: {{ template "azure-lab-container.name" . }}
+    chart: {{ template "azure-lab-container.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: {{ template "azure-lab-container.name" . }}
+    release: {{ .Release.Name }}
